@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { notFoundHandler, errorHandler } = require('./middleware/errorMiddleware');
+const { privateNoCache, publicStaleWhileRevalidate, getContentVersion } = require('./middleware/cacheMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const matchRoutes = require('./routes/matchRoutes');
@@ -10,6 +11,7 @@ const tutorialRoutes = require('./routes/tutorialRoutes');
 const bookmarkRoutes = require('./routes/bookmarkRoutes');
 const contributionRoutes = require('./routes/contributionRoutes');
 const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -32,7 +34,8 @@ app.use(
     },
     credentials: true, // Necessary to send/receive HttpOnly cookies
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-guest-token', 'x-idempotency-key'],
+    exposedHeaders: ['Cache-Control', 'x-content-version'],
   })
 );
 
@@ -69,15 +72,27 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Content version endpoint for client cache invalidation detection
+app.get('/api/content-version', (req, res) => {
+  res.status(200).json({
+    success: true,
+    version: getContentVersion(),
+  });
+});
+
 // Mount Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/games', gameRoutes);
-app.use('/api/matches', matchRoutes);
-app.use('/api/faqs', faqRoutes);
-app.use('/api/tutorials', tutorialRoutes);
-app.use('/api/bookmarks', bookmarkRoutes);
-app.use('/api/contributions', contributionRoutes);
-app.use('/api/users', userRoutes);
+// Private/sensitive endpoints: strict no-cache
+app.use('/api/auth', privateNoCache, authRoutes);
+app.use('/api/matches', privateNoCache, matchRoutes);
+app.use('/api/bookmarks', privateNoCache, bookmarkRoutes);
+app.use('/api/contributions', privateNoCache, contributionRoutes);
+app.use('/api/users', privateNoCache, userRoutes);
+app.use('/api/admin', privateNoCache, adminRoutes);
+
+// Public catalogue, tutorials & FAQs: stale-while-revalidate
+app.use('/api/games', publicStaleWhileRevalidate(600, 1200), gameRoutes);
+app.use('/api/faqs', publicStaleWhileRevalidate(600, 1200), faqRoutes);
+app.use('/api/tutorials', publicStaleWhileRevalidate(600, 1200), tutorialRoutes);
 
 // Centralized error handling
 app.use(notFoundHandler);

@@ -89,7 +89,8 @@ const register = async (req, res) => {
  * @access  Public
  */
 const login = async (req, res) => {
-  const { identifier, password } = req.body; // identifier can be username or email
+  const identifier = req.body.identifier || req.body.email || req.body.username;
+  const { password } = req.body;
 
   if (!identifier || !password) {
     return res.status(400).json({
@@ -230,7 +231,7 @@ const logout = async (req, res) => {
   }
 
   // Clear the HttpOnly cookie
-  res.clearCookie('refreshToken', getRefreshCookieOptions());
+  res.clearCookie('refreshToken', getClearCookieOptions());
 
   return res.status(200).json({
     success: true,

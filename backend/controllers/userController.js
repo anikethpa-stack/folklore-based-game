@@ -19,15 +19,19 @@ const getUserProfile = async (req, res) => {
 
     // Fetch user match count and win stats
     const totalMatches = await Match.countDocuments({
-      'players.player1.userId': userId,
+      $or: [{ ownerId: userId }, { 'players.player1.userId': userId }],
     });
 
-    const completedMatches = await Match.find({
-      'players.player1.userId': userId,
+    const completedCount = await Match.countDocuments({
+      $or: [{ ownerId: userId }, { 'players.player1.userId': userId }],
       status: 'completed',
+    });
+
+    const recentMatches = await Match.find({
+      $or: [{ ownerId: userId }, { 'players.player1.userId': userId }],
     })
-      .sort({ completedAt: -1 })
-      .limit(10)
+      .sort({ createdAt: -1 })
+      .limit(20)
       .populate('gameId', 'name slug badgeTheme');
 
     // Count bookmarks
@@ -39,10 +43,10 @@ const getUserProfile = async (req, res) => {
         user: user.toSafeObject(),
         stats: {
           totalMatches,
-          completedCount: completedMatches.length,
+          completedCount,
           bookmarks: bookmarkCount,
         },
-        recentMatches: completedMatches,
+        recentMatches,
       },
     });
   } catch (error) {

@@ -16,10 +16,26 @@ const faqsData = [
   {
     question: 'How does FolkBoard ensure historical accuracy?',
     answer:
-      'We strictly distinguish documented archaeological and epigraphical facts from modern reconstructed rules. All historical claims are accompanied by citations from verified sources, such as Archaeological Survey of India (ASI) temple floor surveys and academic publications by scholars like H.J.R. Murray.',
+      'We strictly distinguish documented archaeological and epigraphical facts from scholarly interpretations, living oral traditions, and digital reconstructions. All historical claims cite verifiable sources, including peer-reviewed publications by game historians (such as H. J. R. Murray and Alexander de Voogt), archaeological temple surveys, and museum catalogs from institutions like the Government Museum, Chennai and the British Museum.',
     category: 'General',
     difficulty: 'All',
     order: 2,
+  },
+  {
+    question: 'Are the game boards carved into South Indian temples royal commissions or pilgrim graffiti?',
+    answer:
+      'Archaeological field researchers (such as R. Vasantha, 2003, and Dr. Irving Finkel, 2007) indicate that board game incisions on temple plinths, flagstones, and steps were predominantly informal vernacular graffiti. They were incised by resting devotees, pilgrims, soldiers, and temple guards over multiple centuries during the Vijayanagara and Nayaka eras, rather than official royal liturgical inscriptions. The presence of a carved board confirms the site was used for leisure, but the carving may post-date the original temple construction.',
+    category: 'General',
+    difficulty: 'All',
+    order: 3,
+  },
+  {
+    question: 'Did modern games like Chess evolve from Aadu Puli Aatam or Pallanguzhi?',
+    answer:
+      'No. In accordance with credible gaming historiography, FolkBoard avoids claiming unproven evolutionary lineages. Aadu Puli Aatam belongs to the indigenous South Asian asymmetric hunt game family (related to Himalayan Bagh-Chal and Nepalese hunt games), while Pallanguzhi belongs to the global Mancala family. Neither game directly evolved into or from European Chess or Checkers; they represent independent, mathematically sophisticated traditional systems developed within South Asian vernacular culture.',
+    category: 'General',
+    difficulty: 'All',
+    order: 4,
   },
   {
     question: 'How do Tigers capture Goats in Aadu Puli Aatam?',

@@ -64,5 +64,7 @@ const contributionSchema = new mongoose.Schema(
   }
 );
 
+contributionSchema.index({ moderationStatus: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Contribution', contributionSchema);
 

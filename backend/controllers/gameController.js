@@ -29,7 +29,7 @@ const getGames = async (req, res) => {
       .select('name slug alternateNames category origin estimatedAge difficulty description boardConfiguration badgeTheme status');
 
     // HTTP Cache Strategy: Stale-While-Revalidate (Section 7)
-    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=1200');
 
     return res.status(200).json({
       success: true,

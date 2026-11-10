@@ -37,6 +37,21 @@ const gameVariantSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    isPlayable: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ['playable', 'informational', 'in_development'],
+      default: 'playable',
+      index: true,
+    },
+    ruleOverrides: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     references: [
       {
         title: { type: String },

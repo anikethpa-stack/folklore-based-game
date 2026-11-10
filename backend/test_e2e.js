@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const RefreshSession = require('./models/RefreshSession');
@@ -12,8 +13,8 @@ async function runE2ETests() {
 
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    const server = app.listen(5096);
-    const BASE = 'http://127.0.0.1:5096/api';
+    const server = app.listen(5094);
+    const BASE = 'http://127.0.0.1:5094/api';
 
     let accessToken = null;
     let refreshCookie = null;

@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const Match = require('./models/Match');
 const app = require('./app');
@@ -34,6 +35,7 @@ async function testGameEngine() {
     }
 
     const aaduMatchId = m1Data.data.match._id;
+    const aaduGuestToken = m1Data.data.guestToken;
 
     // -------------------------------------------------------------
     // TEST 2: Legal Goat Placement
@@ -41,7 +43,10 @@ async function testGameEngine() {
     console.log('Test 2: Submit Legal Goat Placement (Goat onto empty node 2)');
     const placeRes = await fetch(`${BASE_URL}/${aaduMatchId}/moves`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-guest-token': aaduGuestToken,
+      },
       body: JSON.stringify({ from: null, to: 2, player: 'goats' }),
     });
     const placeData = await placeRes.json();
@@ -63,7 +68,10 @@ async function testGameEngine() {
     console.log('Test 3: Invalid Move Rejection (Tiger tries illegal non-adjacent jump)');
     const badMoveRes = await fetch(`${BASE_URL}/${aaduMatchId}/moves`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-guest-token': aaduGuestToken,
+      },
       body: JSON.stringify({ from: 0, to: 22, player: 'tigers' }),
     });
     const badMoveData = await badMoveRes.json();
@@ -84,12 +92,15 @@ async function testGameEngine() {
     console.log('Test 4: Wrong Turn Rejection (Goats try to move on Tigers turn)');
     const wrongTurnRes = await fetch(`${BASE_URL}/${aaduMatchId}/moves`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-guest-token': aaduGuestToken,
+      },
       body: JSON.stringify({ from: null, to: 4, player: 'goats' }),
     });
     const wrongTurnData = await wrongTurnRes.json();
 
-    if (wrongTurnRes.status === 400 && wrongTurnData.rejectionReason.includes("TIGERS' turn")) {
+    if (wrongTurnRes.status === 400 && wrongTurnData.message && wrongTurnData.message.includes("TIGERS' turn")) {
       console.log('  ✓ PASSED: Server blocked out-of-turn play.');
     } else {
       throw new Error(`Test 4 Failed: ${JSON.stringify(wrongTurnData)}`);
@@ -100,13 +111,18 @@ async function testGameEngine() {
     // -------------------------------------------------------------
     console.log('Test 5: Legal Tiger 1-Step Movement (Tiger at 0 moves to adjacent empty 1 is occupied, 0 to ...)');
     // Let's check legal moves for tigers
-    const getRes = await fetch(`${BASE_URL}/${aaduMatchId}`);
+    const getRes = await fetch(`${BASE_URL}/${aaduMatchId}`, {
+      headers: { 'x-guest-token': aaduGuestToken },
+    });
     const getData = await getRes.json();
     const tigerMove = getData.data.legalMoves[0];
 
     const tigerStepRes = await fetch(`${BASE_URL}/${aaduMatchId}/moves`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-guest-token': aaduGuestToken,
+      },
       body: JSON.stringify({ from: tigerMove.from, to: tigerMove.to, player: 'tigers' }),
     });
     const tigerStepData = await tigerStepRes.json();
@@ -140,6 +156,7 @@ async function testGameEngine() {
     }
 
     const palMatchId = p1Data.data.match._id;
+    const palGuestToken = p1Data.data.guestToken;
 
     // -------------------------------------------------------------
     // TEST 7: Legal Pallanguzhi Sowing
@@ -147,7 +164,10 @@ async function testGameEngine() {
     console.log('Test 7: Player 1 Sows from Pit 0 (First Pit on Bottom Row)');
     const sowRes = await fetch(`${BASE_URL}/${palMatchId}/moves`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-guest-token': palGuestToken,
+      },
       body: JSON.stringify({ from: 0, player: 'player1' }),
     });
     const sowData = await sowRes.json();
@@ -168,7 +188,10 @@ async function testGameEngine() {
     console.log('Test 8: Reject Player 2 trying to sow from Player 1 side (Pit 2)');
     const badSideRes = await fetch(`${BASE_URL}/${palMatchId}/moves`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-guest-token': palGuestToken,
+      },
       body: JSON.stringify({ from: 2, player: 'player2' }),
     });
     const badSideData = await badSideRes.json();
@@ -185,6 +208,7 @@ async function testGameEngine() {
     console.log('Test 9: Authoritative Match Restart');
     const resetRes = await fetch(`${BASE_URL}/${palMatchId}/restart`, {
       method: 'POST',
+      headers: { 'x-guest-token': palGuestToken },
     });
     const resetData = await resetRes.json();
 

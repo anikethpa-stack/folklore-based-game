@@ -53,5 +53,7 @@ const tutorialSchema = new mongoose.Schema(
   }
 );
 
+tutorialSchema.index({ gameSlug: 1, status: 1 });
+
 module.exports = mongoose.model('Tutorial', tutorialSchema);
 

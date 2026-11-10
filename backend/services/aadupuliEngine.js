@@ -82,11 +82,43 @@ const JUMP_TRIPLETS = [
 ];
 
 /**
- * Generate initial clean state for Aadu Puli Aatam
+ * Generate initial clean state for Aadu Puli Aatam or its regional variants
+ *
+ * @param {string|null} variantSlug - Optional slug of regional variant (e.g. 'pulijudam-4-tigers')
+ * @param {Object|null} variantConfig - Optional rule override configuration
  */
-const getInitialState = () => {
+const getInitialState = (variantSlug = null, variantConfig = null) => {
   const nodes = new Array(23).fill(null);
-  // Traditional opening: 3 tigers placed at Apex (0) and Top Wings (1 and 3)
+
+  const isPulijudam4Tigers =
+    variantSlug === 'pulijudam-4-tigers' ||
+    variantConfig?.tigerCount === 4;
+
+  if (isPulijudam4Tigers) {
+    // Pulijudam (4-Tiger Deccan Variant): 4 tigers placed at apex (0) and Tier 1 (1, 2, 3)
+    const initialTigerNodes = variantConfig?.initialTigerNodes || [0, 1, 2, 3];
+    initialTigerNodes.forEach((nodeIndex) => {
+      nodes[nodeIndex] = 'tiger';
+    });
+
+    const totalGoats = variantConfig?.goatCount || 16;
+    const winCaptureThreshold = variantConfig?.winCaptureThreshold || 5;
+
+    return {
+      nodes,
+      totalGoats,
+      tigerCount: 4,
+      winCaptureThreshold,
+      goatsPlaced: 0,
+      goatsCaptured: 0,
+      phase: 'placement', // 'placement' until 16 goats placed, then 'movement'
+      turn: 'goats', // Goats always move first in traditional Indian rules
+      variant: 'pulijudam-4-tigers',
+      lastMove: null,
+    };
+  }
+
+  // Traditional Standard Opening: 3 tigers placed at Apex (0) and Top Wings (1 and 3)
   nodes[0] = 'tiger';
   nodes[1] = 'tiger';
   nodes[3] = 'tiger';
@@ -94,10 +126,13 @@ const getInitialState = () => {
   return {
     nodes,
     totalGoats: 15,
+    tigerCount: 3,
+    winCaptureThreshold: 5,
     goatsPlaced: 0,
     goatsCaptured: 0,
     phase: 'placement', // 'placement' until 15 goats placed, then 'movement'
     turn: 'goats', // Goats always move first in traditional Indian rules
+    variant: 'standard',
     lastMove: null,
   };
 };
@@ -223,7 +258,7 @@ const validateMove = (state, move) => {
       if (from === null || from === undefined) {
         return {
           isValid: false,
-          reason: 'All 15 goats have entered the board. You must select an existing goat to move.',
+          reason: `All ${totalGoats || 15} goats have entered the board. You must select an existing goat to move.`,
         };
       }
       if (nodes[from] !== 'goat') {
@@ -259,7 +294,7 @@ const validateMove = (state, move) => {
     if (from === null || from === undefined) {
       return {
         isValid: false,
-        reason: 'You must select one of the 3 tigers on the board to move or jump.',
+        reason: `You must select one of the ${state.tigerCount || 3} tigers on the board to move or jump.`,
       };
     }
     if (nodes[from] !== 'tiger') {
@@ -383,24 +418,27 @@ const applyMove = (state, move, validationResult) => {
  * Check if match has concluded
  */
 const checkGameOver = (state) => {
-  // 1. Tigers Win Condition: 5 or more goats captured
-  if (state.goatsCaptured >= 5) {
+  const threshold = state.winCaptureThreshold || 5;
+  const tigerCount = state.tigerCount || 3;
+
+  // 1. Tigers Win Condition: threshold or more goats captured
+  if (state.goatsCaptured >= threshold) {
     return {
       isGameOver: true,
       winner: 'tigers',
       winReason:
-        'Tigers have captured 5 goats! The remaining goat herd can no longer encircle and trap the tigers.',
+        `Tigers have captured ${state.goatsCaptured} goats! The remaining goat herd can no longer encircle and trap the tigers.`,
     };
   }
 
-  // 2. Goats Win Condition: Check if all 3 tigers have 0 legal moves
+  // 2. Goats Win Condition: Check if all tigers have 0 legal moves
   const tigerMoves = getLegalMoves({ ...state, turn: 'tigers' });
   if (tigerMoves.length === 0) {
     return {
       isGameOver: true,
       winner: 'goats',
       winReason:
-        'Victory for the Goats! All three tigers have been completely encircled and immobilized with no legal moves available.',
+        `Victory for the Goats! All ${tigerCount} tigers have been completely encircled and immobilized with no legal moves available.`,
     };
   }
 

@@ -81,6 +81,8 @@ const gameSchema = new mongoose.Schema(
         title: { type: String, required: true },
         author: { type: String },
         year: { type: String },
+        publisher: { type: String, default: '' },
+        notes: { type: String, default: '' },
         citationType: {
           type: String,
           enum: [
@@ -90,6 +92,7 @@ const gameSchema = new mongoose.Schema(
             'Oral Tradition / Ethnographic',
             'Ethnographic',
             'Historical Text',
+            'Museum Catalog',
           ],
           default: 'Academic Publication',
         },

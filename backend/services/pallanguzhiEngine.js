@@ -7,14 +7,26 @@ const PIT_COUNT = 14;
 const INITIAL_SEEDS_PER_PIT = 5;
 
 /**
- * Generate initial clean state for Pallanguzhi
+ * Generate initial clean state for Pallanguzhi or its regional variants
+ *
+ * @param {string|null} variantSlug - Optional slug of regional variant (e.g. 'kaashi-raja-rani')
+ * @param {Object|null} variantConfig - Optional rule override configuration
  */
-const getInitialState = () => {
-  // 14 pits, each seeded with 5 cowrie shells (70 shells total)
-  const pits = new Array(PIT_COUNT).fill(INITIAL_SEEDS_PER_PIT);
+const getInitialState = (variantSlug = null, variantConfig = null) => {
+  const isKaashi =
+    variantSlug === 'kaashi-raja-rani' ||
+    variantConfig?.seedsPerPit === 6 ||
+    variantConfig?.pasuRule === true;
+
+  const initialSeeds = isKaashi ? (variantConfig?.seedsPerPit || 6) : INITIAL_SEEDS_PER_PIT;
+  const pits = new Array(PIT_COUNT).fill(initialSeeds);
 
   return {
     pits,
+    initialSeedsPerPit: initialSeeds,
+    totalSeeds: initialSeeds * PIT_COUNT,
+    pasuRule: isKaashi,
+    variant: isKaashi ? 'kaashi-raja-rani' : 'standard',
     stores: {
       player1: 0,
       player2: 0,
@@ -120,6 +132,21 @@ const applyMove = (state, move, validationResult) => {
     newPits[currentPit] += 1;
     inHand -= 1;
 
+    // Pasu (Cow) Rule for Kaashi Variant:
+    // When any pit accumulates exactly 4 seeds during sowing, the pit's owner claims those 4 seeds
+    if (state.pasuRule && newPits[currentPit] === 4) {
+      const pitOwner = currentPit < 7 ? 'player1' : 'player2';
+      newStores[pitOwner] += 4;
+      capturedTotal += 4;
+      newPits[currentPit] = 0;
+      distributionLog.push({
+        event: 'pasu_capture',
+        pit: currentPit,
+        claimedBy: pitOwner,
+        seeds: 4,
+      });
+    }
+
     // When all shells in hand are placed:
     if (inHand === 0) {
       // If the pit we just dropped into now has MORE than 1 shell (i.e. was not empty before)
@@ -128,7 +155,7 @@ const applyMove = (state, move, validationResult) => {
         inHand = newPits[currentPit];
         newPits[currentPit] = 0;
         distributionLog.push({ event: 'cascade_pickup', pit: currentPit, count: inHand });
-      } else {
+      } else if (newPits[currentPit] === 1) {
         // Last shell landed in a previously EMPTY pit (now contains exactly 1 shell)
         // Check next pit for capture
         const nextPit = (currentPit + 1) % PIT_COUNT;
@@ -169,6 +196,9 @@ const applyMove = (state, move, validationResult) => {
         }
         // Turn ends
         break;
+      } else {
+        // Pit contains 0 (e.g. was cleared by Pasu 4-seed capture): turn ends
+        break;
       }
     }
   }
@@ -177,6 +207,7 @@ const applyMove = (state, move, validationResult) => {
   const nextPlayer = player === 'player1' ? 'player2' : 'player1';
 
   const newState = {
+    ...state,
     pits: newPits,
     stores: newStores,
     turn: nextPlayer,
@@ -221,15 +252,16 @@ const checkGameOver = (state) => {
         finalStores.player2 += state.pits[i];
       }
 
+      const totalGameSeeds = state.totalSeeds || 70;
       let winner = 'draw';
-      let winReason = `The match ended in a draw! Both players collected exactly ${finalStores.player1} shells.`;
+      let winReason = `The match ended in a draw! Both players collected exactly ${finalStores.player1} shells out of ${totalGameSeeds}.`;
 
       if (finalStores.player1 > finalStores.player2) {
         winner = 'player1';
-        winReason = `Player 1 wins with ${finalStores.player1} shells against Player 2's ${finalStores.player2} shells!`;
+        winReason = `Player 1 wins with ${finalStores.player1} shells against Player 2's ${finalStores.player2} shells (out of ${totalGameSeeds})!`;
       } else if (finalStores.player2 > finalStores.player1) {
         winner = 'player2';
-        winReason = `Player 2 wins with ${finalStores.player2} shells against Player 1's ${finalStores.player1} shells!`;
+        winReason = `Player 2 wins with ${finalStores.player2} shells against Player 1's ${finalStores.player1} shells (out of ${totalGameSeeds})!`;
       }
 
       return {
